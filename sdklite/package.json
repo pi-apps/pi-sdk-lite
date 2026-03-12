@@ -1,0 +1,27 @@
+{
+  "name": "Pi-SDKLite",
+  "version": "1.0.0",
+  "description": "Wrapper for Pi SDK used by apps on App Studio",
+  "private": true,
+  "scripts": {
+    "test": "vitest run",
+    "build": "npx webpack",
+    "build:dev": "npx webpack --env target=development",
+    "build:staging": "npx webpack --env target=staging",
+    "build:production": "npx webpack --env target=production",
+    "build:all": "npx webpack --env target=development && npx webpack --env target=staging && npx webpack --env target=production"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "ts-loader": "^9.5.1",
+    "typescript": "^5.9.0",
+    "vitest": "^4.0.18",
+    "webpack": "^5.97.1",
+    "webpack-cli": "^6.0.1"
+  },
+  "dependencies": {
+    "axios": "^1.9.0"
+  }
+}
