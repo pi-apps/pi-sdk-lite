@@ -468,7 +468,7 @@ class SDKLiteInstance {
 
 const PiSDKLite = {
   async init(): Promise<SDKLiteInstance> {
-    // TODO: Maybe init Pi SDK instance ourselves? Going to check on the sandbox auto-detection status
+    // TODO: Maybe init Pi SDK instance ourselves?
     const instance = new SDKLiteInstance();
     return instance.init();
   },

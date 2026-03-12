@@ -1,0 +1,9 @@
+version: "3.9"
+services:
+  sdklite:
+    build:
+      context: ./sdklite
+      args:
+        ENVIRONMENT: ${ENVIRONMENT}
+    ports:
+      - "${PORT}:80"

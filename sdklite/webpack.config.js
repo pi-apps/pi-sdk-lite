@@ -8,8 +8,8 @@ const BACKEND_URLS = {
   production: "https://backend.appstudio-u7cm9zhmha0ruwv8.piappengine.com",
 };
 
-module.exports = (env = {}) => {
-  const target = env.target || "development";
+module.exports = () => {
+  const target = process.env.NODE_ENV || "development";
   const isDev = target === "development";
 
   const backendUrl = process.env.SDKLITE_BACKEND_URL || BACKEND_URLS[target];
@@ -25,7 +25,7 @@ module.exports = (env = {}) => {
     devtool: isDev ? "eval-source-map" : false,
     target: "web",
     output: {
-      filename: `sdklite-${target}.js`,
+      filename: "sdklite.js",
       path: path.resolve(__dirname, "dist"),
     },
     module: {
