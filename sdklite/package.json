@@ -5,7 +5,9 @@
   "private": true,
   "scripts": {
     "test": "vitest run",
-    "build": "webpack"
+    "build": "webpack",
+    "build:staging": "NODE_ENV=staging webpack",
+    "build:production": "NODE_ENV=production webpack"
   },
   "keywords": [],
   "author": "",
