@@ -2,7 +2,6 @@
 ## BUILDER CONTAINER
 ##
 
-# TODO: Bump node version?
 FROM node:25.8.1 AS builder
 
 ARG ENVIRONMENT
