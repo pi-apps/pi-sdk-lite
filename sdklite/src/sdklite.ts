@@ -82,6 +82,10 @@ interface ConsumeResponse {
   quantity: number;
 }
 
+interface RestoreStateOptions {
+  keys?: string[];
+}
+
 interface RewardedStatusResponse {
   issued?: boolean;
 }
@@ -179,6 +183,7 @@ class SDKLiteInstance {
   readonly state: {
     get: (key: string) => Promise<UserStateRecord | null>;
     set: (key: string, blob: UserStateBlob) => Promise<void>;
+    restore: (options?: RestoreStateOptions) => Promise<PurchasesResponse>;
     purchases: () => Promise<PurchasesResponse>;
     consume: (productId: ProductId, quantity?: number) => Promise<ConsumeResponse>;
   };
@@ -199,6 +204,7 @@ class SDKLiteInstance {
     this.state = {
       get: this.getUserState.bind(this),
       set: this.setUserState.bind(this),
+      restore: this.restoreState.bind(this),
       purchases: this.getPurchases.bind(this),
       consume: this.consumePurchase.bind(this),
     };
@@ -337,6 +343,12 @@ class SDKLiteInstance {
       { headers: this.authHeaders() }
     );
     return response.data;
+  }
+
+  private async restoreState(_options?: RestoreStateOptions): Promise<PurchasesResponse> {
+    // Minimal first iteration: mirror purchases() shape.
+    // TODO: Fetch the rest of the state (user states and app config)
+    return this.getPurchases();
   }
 
   private async consumePurchase(

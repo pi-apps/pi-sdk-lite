@@ -90,6 +90,7 @@ describe("SDKLite", () => {
       expect(typeof sdk.makePurchase).toBe("function");
       expect(typeof sdk.state.get).toBe("function");
       expect(typeof sdk.state.set).toBe("function");
+      expect(typeof sdk.state.restore).toBe("function");
       expect(typeof sdk.state.purchases).toBe("function");
       expect(typeof sdk.state.consume).toBe("function");
       expect(typeof sdk.showInterstitial).toBe("function");
@@ -153,6 +154,25 @@ describe("SDKLite", () => {
 
       expect(result).toEqual({
         purchases: [{ productId: "extra-life", quantity: 3 }],
+      });
+      expect(mockGet).toHaveBeenCalledWith(
+        "/v1/purchases",
+        expect.objectContaining({ headers: { Authorization: `Bearer ${FAKE_TOKEN}` } })
+      );
+    });
+
+    it("restores state with purchases-only shape for now", async () => {
+      const sdk = await SDKLite.init();
+      stubSuccessfulLogin();
+      mockGet.mockResolvedValueOnce({
+        status: 200,
+        data: { purchases: [{ productId: "extra-life", quantity: 5 }] },
+      });
+
+      const result = await sdk.state.restore({ keys: ["progress"] });
+
+      expect(result).toEqual({
+        purchases: [{ productId: "extra-life", quantity: 5 }],
       });
       expect(mockGet).toHaveBeenCalledWith(
         "/v1/purchases",
