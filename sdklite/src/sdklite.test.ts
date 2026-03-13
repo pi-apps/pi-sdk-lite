@@ -88,8 +88,8 @@ describe("SDKLite", () => {
       expect(sdk).toBeDefined();
       expect(typeof sdk.login).toBe("function");
       expect(typeof sdk.makePurchase).toBe("function");
-      expect(typeof sdk.userState.get).toBe("function");
-      expect(typeof sdk.userState.set).toBe("function");
+      expect(typeof sdk.state.get).toBe("function");
+      expect(typeof sdk.state.set).toBe("function");
       expect(typeof sdk.state.purchases).toBe("function");
       expect(typeof sdk.state.consume).toBe("function");
       expect(typeof sdk.showInterstitial).toBe("function");
@@ -98,21 +98,21 @@ describe("SDKLite", () => {
     });
   });
 
-  describe("userState", () => {
-    it("gets user state and returns payload", async () => {
+  describe("state", () => {
+    it("gets user state via state.get", async () => {
       const sdk = await SDKLite.init();
       stubSuccessfulLogin();
       mockGet.mockResolvedValueOnce({
         status: 200,
-        data: { blob: { level: 4, coins: 125 }, updatedAt: "2026-02-19T00:00:00Z", version: 2 },
+        data: { blob: { level: 6 }, updatedAt: "2026-02-19T00:00:00Z", version: 4 },
       });
 
-      const result = await sdk.userState.get("progress");
+      const result = await sdk.state.get("progress");
 
       expect(result).toEqual({
-        blob: { level: 4, coins: 125 },
+        blob: { level: 6 },
         updatedAt: "2026-02-19T00:00:00Z",
-        version: 2,
+        version: 4,
       });
       expect(mockGet).toHaveBeenCalledWith(
         "/v1/user-state/progress",
@@ -120,29 +120,27 @@ describe("SDKLite", () => {
       );
     });
 
-    it("returns null when user state key is missing", async () => {
+    it("returns null when state key is missing", async () => {
       const sdk = await SDKLite.init();
       stubSuccessfulLogin();
       mockGet.mockRejectedValueOnce(axiosError(404));
 
-      await expect(sdk.userState.get("missing-key")).resolves.toBeNull();
+      await expect(sdk.state.get("missing-key")).resolves.toBeNull();
     });
 
-    it("sets user state via PUT", async () => {
+    it("sets user state via state.set", async () => {
       const sdk = await SDKLite.init();
       stubSuccessfulLogin();
       mockPut.mockResolvedValueOnce({ status: 204 });
 
-      await expect(sdk.userState.set("progress", { level: 5 })).resolves.toBeUndefined();
+      await expect(sdk.state.set("progress", { level: 7 })).resolves.toBeUndefined();
       expect(mockPut).toHaveBeenCalledWith(
         "/v1/user-state/progress",
-        { blob: { level: 5 } },
+        { blob: { level: 7 } },
         expect.objectContaining({ headers: { Authorization: `Bearer ${FAKE_TOKEN}` } })
       );
     });
-  });
 
-  describe("state", () => {
     it("gets purchases and returns payload", async () => {
       const sdk = await SDKLite.init();
       stubSuccessfulLogin();

@@ -176,11 +176,9 @@ function createBackendClient(): AxiosInstance {
 class SDKLiteInstance {
   private readonly backendAPIClient: AxiosInstance;
 
-  readonly userState: {
+  readonly state: {
     get: (key: string) => Promise<UserStateRecord | null>;
     set: (key: string, blob: UserStateBlob) => Promise<void>;
-  };
-  readonly state: {
     purchases: () => Promise<PurchasesResponse>;
     consume: (productId: ProductId, quantity?: number) => Promise<ConsumeResponse>;
   };
@@ -198,11 +196,9 @@ class SDKLiteInstance {
     this.adNetworkSupported = false;
     this.piAccessToken = null;
 
-    this.userState = {
+    this.state = {
       get: this.getUserState.bind(this),
       set: this.setUserState.bind(this),
-    };
-    this.state = {
       purchases: this.getPurchases.bind(this),
       consume: this.consumePurchase.bind(this),
     };
