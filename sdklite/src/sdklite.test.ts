@@ -90,6 +90,8 @@ describe("SDKLite", () => {
       expect(typeof sdk.makePurchase).toBe("function");
       expect(typeof sdk.userState.get).toBe("function");
       expect(typeof sdk.userState.set).toBe("function");
+      expect(typeof sdk.state.purchases).toBe("function");
+      expect(typeof sdk.state.consume).toBe("function");
       expect(typeof sdk.showInterstitial).toBe("function");
       expect(typeof sdk.showRewarded).toBe("function");
       expect(typeof sdk.isAdNetworkSupported).toBe("function");
@@ -136,6 +138,82 @@ describe("SDKLite", () => {
         "/v1/user-state/progress",
         { blob: { level: 5 } },
         expect.objectContaining({ headers: { Authorization: `Bearer ${FAKE_TOKEN}` } })
+      );
+    });
+  });
+
+  describe("state", () => {
+    it("gets purchases and returns payload", async () => {
+      const sdk = await SDKLite.init();
+      stubSuccessfulLogin();
+      mockGet.mockResolvedValueOnce({
+        status: 200,
+        data: { purchases: [{ productId: "extra-life", quantity: 3 }] },
+      });
+
+      const result = await sdk.state.purchases();
+
+      expect(result).toEqual({
+        purchases: [{ productId: "extra-life", quantity: 3 }],
+      });
+      expect(mockGet).toHaveBeenCalledWith(
+        "/v1/purchases",
+        expect.objectContaining({ headers: { Authorization: `Bearer ${FAKE_TOKEN}` } })
+      );
+    });
+
+    it("consumes purchase with explicit quantity", async () => {
+      const sdk = await SDKLite.init();
+      stubSuccessfulLogin();
+      mockPost.mockResolvedValueOnce({
+        status: 200,
+        data: { productId: "extra-life", quantity: 2 },
+      });
+
+      const result = await sdk.state.consume("extra-life", 1);
+
+      expect(result).toEqual({ productId: "extra-life", quantity: 2 });
+      expect(mockPost).toHaveBeenCalledWith(
+        "/v1/purchases/consume",
+        { productId: "extra-life", quantity: 1 },
+        expect.objectContaining({ headers: { Authorization: `Bearer ${FAKE_TOKEN}` } })
+      );
+    });
+
+    it("consumes purchase with default quantity payload", async () => {
+      const sdk = await SDKLite.init();
+      stubSuccessfulLogin();
+      mockPost.mockResolvedValueOnce({
+        status: 200,
+        data: { productId: "extra-life", quantity: 1 },
+      });
+
+      await sdk.state.consume("extra-life");
+
+      expect(mockPost).toHaveBeenCalledWith(
+        "/v1/purchases/consume",
+        { productId: "extra-life" },
+        expect.objectContaining({ headers: { Authorization: `Bearer ${FAKE_TOKEN}` } })
+      );
+    });
+
+    it("passes through consume validation errors", async () => {
+      const sdk = await SDKLite.init();
+      stubSuccessfulLogin();
+      mockPost.mockRejectedValueOnce(axiosError(422));
+
+      await expect(sdk.state.consume("extra-life", 99)).rejects.toMatchObject({
+        isAxiosError: true,
+        response: { status: 422 },
+      });
+    });
+
+    it("throws when purchases access login fails", async () => {
+      const sdk = await SDKLite.init();
+      mockPi.authenticate.mockResolvedValue({ user: null, accessToken: null });
+
+      await expect(sdk.state.purchases()).rejects.toThrow(
+        "Unable to authenticate user for purchases access."
       );
     });
   });

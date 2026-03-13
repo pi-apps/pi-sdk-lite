@@ -68,6 +68,20 @@ interface UserStateRecord {
   version: number;
 }
 
+interface UserPurchaseBalance {
+  productId: ProductId;
+  quantity: number;
+}
+
+interface PurchasesResponse {
+  purchases: UserPurchaseBalance[];
+}
+
+interface ConsumeResponse {
+  productId: ProductId;
+  quantity: number;
+}
+
 interface RewardedStatusResponse {
   issued?: boolean;
 }
@@ -166,6 +180,10 @@ class SDKLiteInstance {
     get: (key: string) => Promise<UserStateRecord | null>;
     set: (key: string, blob: UserStateBlob) => Promise<void>;
   };
+  readonly state: {
+    purchases: () => Promise<PurchasesResponse>;
+    consume: (productId: ProductId, quantity?: number) => Promise<ConsumeResponse>;
+  };
 
   private userLoggedIn: boolean;
 
@@ -183,6 +201,10 @@ class SDKLiteInstance {
     this.userState = {
       get: this.getUserState.bind(this),
       set: this.setUserState.bind(this),
+    };
+    this.state = {
+      purchases: this.getPurchases.bind(this),
+      consume: this.consumePurchase.bind(this),
     };
 
     this.onIncompletePaymentFound = this.onIncompletePaymentFound.bind(this);
@@ -306,6 +328,38 @@ class SDKLiteInstance {
     if (response.status !== 204) {
       throw new Error("Failed to persist user state.");
     }
+  }
+
+  private async getPurchases(): Promise<PurchasesResponse> {
+    const loggedIn = await this.login();
+    if (!loggedIn) {
+      throw new Error("Unable to authenticate user for purchases access.");
+    }
+
+    const response = await this.backendAPIClient.get<PurchasesResponse>(
+      "/v1/purchases",
+      { headers: this.authHeaders() }
+    );
+    return response.data;
+  }
+
+  private async consumePurchase(
+    productId: ProductId,
+    quantity?: number
+  ): Promise<ConsumeResponse> {
+    const loggedIn = await this.login();
+    if (!loggedIn) {
+      throw new Error("Unable to authenticate user for purchases access.");
+    }
+
+    const payload =
+      typeof quantity === "number" ? { productId, quantity } : { productId };
+    const response = await this.backendAPIClient.post<ConsumeResponse>(
+      "/v1/purchases/consume",
+      payload,
+      { headers: this.authHeaders() }
+    );
+    return response.data;
   }
 
   private conductPayment(productId: ProductId, paymentData: PiPaymentData): Promise<PurchaseResult> {
