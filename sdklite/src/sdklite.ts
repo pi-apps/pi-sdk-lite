@@ -523,7 +523,7 @@ class SDKLiteInstance {
   }
 
   onIncompletePaymentFound(payment: PiPlatformPayment): void {
-    // TODO: Issue goods for payment or signal that developer should
+    // TODO: Check whether we need to explicitly fetch purchases state after this
     void this.completePayment(payment.identifier, payment.transaction.txid).catch(() => false);
   }
 }
