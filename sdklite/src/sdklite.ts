@@ -163,6 +163,10 @@ interface PiAuthenticateResult {
   accessToken?: string;
 }
 
+interface LoginResponse {
+  app_id?: string;
+}
+
 interface PiGlobal {
   authenticate: (
     scopes: string[],
@@ -199,7 +203,7 @@ class SDKLiteInstance {
     set: (key: string, blob: UserStateBlob) => Promise<void>;
     restore: (options?: RestoreStateOptions) => Promise<PurchasesResponse>;
     purchases: () => Promise<PurchasesResponse>;
-    products: (appId: string) => Promise<LegacyProductsResponse>;
+    products: () => Promise<LegacyProductsResponse>;
     consume: (productId: ProductId, quantity?: number) => Promise<ConsumeResponse>;
   };
 
@@ -209,12 +213,15 @@ class SDKLiteInstance {
 
   private piAccessToken: string | null;
 
+  private appId: string | null;
+
   constructor() {
     this.backendAPIClient = createBackendClient();
 
     this.userLoggedIn = false;
     this.adNetworkSupported = false;
     this.piAccessToken = null;
+    this.appId = null;
 
     this.state = {
       get: this.getUserState.bind(this),
@@ -248,9 +255,10 @@ class SDKLiteInstance {
     }
 
     try {
-      await this.backendAPIClient.post("/v1/login", {
+      const loginResponse = await this.backendAPIClient.post<LoginResponse>("/v1/login", {
         pi_auth_token: this.piAccessToken
       });
+      this.appId = loginResponse.data?.app_id ?? null;
       this.userLoggedIn = true;
       return true;
     } catch {
@@ -542,14 +550,17 @@ class SDKLiteInstance {
    * @deprecated Temporary legacy method for apps migrating from non-SDKLite payment flows.
    * Calls GET /v1/apps/:app_id/products to retrieve the product catalog.
    */
-  async getLegacyProducts(appId: string): Promise<LegacyProductsResponse> {
+  async getLegacyProducts(): Promise<LegacyProductsResponse> {
     const loggedIn = await this.login();
     if (!loggedIn) {
       throw new Error("Unable to authenticate user for products access.");
     }
+    if (!this.appId) {
+      throw new Error("Unable to resolve app ID for products access.");
+    }
 
     const response = await this.backendAPIClient.get<LegacyProductsResponse>(
-      `/v1/apps/${encodeURIComponent(appId)}/products`,
+      `/v1/apps/${encodeURIComponent(this.appId)}/products`,
       { headers: this.authHeaders() }
     );
     return response.data;

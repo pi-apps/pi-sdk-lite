@@ -60,7 +60,7 @@ function stubSuccessfulLogin() {
     user: { uid: "user-1" },
     accessToken: FAKE_TOKEN,
   });
-  mockPost.mockResolvedValueOnce({ status: 200, data: {} }); // POST /v1/login
+  mockPost.mockResolvedValueOnce({ status: 200, data: { app_id: "app-from-login" } }); // POST /v1/login
 }
 
 /** Stubs login + a successful POST /v1/offers response. */
@@ -201,7 +201,7 @@ describe("SDKLite", () => {
         },
       });
 
-      const result = await sdk.state.products("my app/id");
+      const result = await sdk.state.products();
 
       expect(result).toEqual({
         products: [
@@ -217,7 +217,7 @@ describe("SDKLite", () => {
         ],
       });
       expect(mockGet).toHaveBeenCalledWith(
-        "/v1/apps/my%20app%2Fid/products",
+        "/v1/apps/app-from-login/products",
         expect.objectContaining({ headers: { Authorization: `Bearer ${FAKE_TOKEN}` } })
       );
     });
@@ -281,8 +281,21 @@ describe("SDKLite", () => {
       const sdk = await SDKLite.init();
       mockPi.authenticate.mockResolvedValue({ user: null, accessToken: null });
 
-      await expect(sdk.state.products("app-1")).rejects.toThrow(
+      await expect(sdk.state.products()).rejects.toThrow(
         "Unable to authenticate user for products access."
+      );
+    });
+
+    it("throws when app ID is missing from login response", async () => {
+      const sdk = await SDKLite.init();
+      mockPi.authenticate.mockResolvedValue({
+        user: { uid: "user-1" },
+        accessToken: FAKE_TOKEN,
+      });
+      mockPost.mockResolvedValueOnce({ status: 200, data: {} }); // POST /v1/login
+
+      await expect(sdk.state.products()).rejects.toThrow(
+        "Unable to resolve app ID for products access."
       );
     });
   });
