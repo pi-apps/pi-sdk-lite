@@ -92,6 +92,7 @@ describe("SDKLite", () => {
       expect(typeof sdk.state.set).toBe("function");
       expect(typeof sdk.state.restore).toBe("function");
       expect(typeof sdk.state.purchases).toBe("function");
+      expect(typeof sdk.state.products).toBe("function");
       expect(typeof sdk.state.consume).toBe("function");
       expect(typeof sdk.showInterstitial).toBe("function");
       expect(typeof sdk.showRewarded).toBe("function");
@@ -180,6 +181,47 @@ describe("SDKLite", () => {
       );
     });
 
+    it("gets legacy products via state.products", async () => {
+      const sdk = await SDKLite.init();
+      stubSuccessfulLogin();
+      mockGet.mockResolvedValueOnce({
+        status: 200,
+        data: {
+          products: [
+            {
+              id: "p-1",
+              slug: "boost",
+              name: "Boost",
+              description: "Temporary boost",
+              price_in_pi: 3.14,
+              is_active: true,
+              created_at: "2026-03-13T00:00:00Z",
+            },
+          ],
+        },
+      });
+
+      const result = await sdk.state.products("my app/id");
+
+      expect(result).toEqual({
+        products: [
+          {
+            id: "p-1",
+            slug: "boost",
+            name: "Boost",
+            description: "Temporary boost",
+            price_in_pi: 3.14,
+            is_active: true,
+            created_at: "2026-03-13T00:00:00Z",
+          },
+        ],
+      });
+      expect(mockGet).toHaveBeenCalledWith(
+        "/v1/apps/my%20app%2Fid/products",
+        expect.objectContaining({ headers: { Authorization: `Bearer ${FAKE_TOKEN}` } })
+      );
+    });
+
     it("consumes purchase with explicit quantity", async () => {
       const sdk = await SDKLite.init();
       stubSuccessfulLogin();
@@ -232,6 +274,15 @@ describe("SDKLite", () => {
 
       await expect(sdk.state.purchases()).rejects.toThrow(
         "Unable to authenticate user for purchases access."
+      );
+    });
+
+    it("throws when products access login fails", async () => {
+      const sdk = await SDKLite.init();
+      mockPi.authenticate.mockResolvedValue({ user: null, accessToken: null });
+
+      await expect(sdk.state.products("app-1")).rejects.toThrow(
+        "Unable to authenticate user for products access."
       );
     });
   });

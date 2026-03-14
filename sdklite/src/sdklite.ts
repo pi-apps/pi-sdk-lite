@@ -82,6 +82,20 @@ interface ConsumeResponse {
   quantity: number;
 }
 
+interface LegacyProduct {
+  id: string;
+  slug: string;
+  name: string;
+  description: string;
+  price_in_pi: number;
+  is_active: boolean;
+  created_at: string;
+}
+
+interface LegacyProductsResponse {
+  products: LegacyProduct[];
+}
+
 interface RestoreStateOptions {
   keys?: string[];
 }
@@ -185,6 +199,7 @@ class SDKLiteInstance {
     set: (key: string, blob: UserStateBlob) => Promise<void>;
     restore: (options?: RestoreStateOptions) => Promise<PurchasesResponse>;
     purchases: () => Promise<PurchasesResponse>;
+    products: (appId: string) => Promise<LegacyProductsResponse>;
     consume: (productId: ProductId, quantity?: number) => Promise<ConsumeResponse>;
   };
 
@@ -206,6 +221,7 @@ class SDKLiteInstance {
       set: this.setUserState.bind(this),
       restore: this.restoreState.bind(this),
       purchases: this.getPurchases.bind(this),
+      products: this.getLegacyProducts.bind(this),
       consume: this.consumePurchase.bind(this),
     };
 
@@ -520,6 +536,23 @@ class SDKLiteInstance {
 
     await sleep(1);
     return this.checkUserWatchedRewardedAd(adId, productId, attemptsLeft - 1);
+  }
+
+  /**
+   * @deprecated Temporary legacy method for apps migrating from non-SDKLite payment flows.
+   * Calls GET /v1/apps/:app_id/products to retrieve the product catalog.
+   */
+  async getLegacyProducts(appId: string): Promise<LegacyProductsResponse> {
+    const loggedIn = await this.login();
+    if (!loggedIn) {
+      throw new Error("Unable to authenticate user for products access.");
+    }
+
+    const response = await this.backendAPIClient.get<LegacyProductsResponse>(
+      `/v1/apps/${encodeURIComponent(appId)}/products`,
+      { headers: this.authHeaders() }
+    );
+    return response.data;
   }
 
   onIncompletePaymentFound(payment: PiPlatformPayment): void {
